@@ -1,0 +1,12 @@
+node_modules
+.build
+coverage
+.eslintcache
+.serverless
+.vscode
+.webpackCache
+.webpack
+dist
+package-lock.json
+.env
+aws-user-info.txt

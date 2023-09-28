@@ -1,0 +1,51 @@
+pipeline {
+    agent {
+        dockerfile { filename 'Dockerfile.build' }
+    }
+    options {
+        withAWS(region:'ap-southeast-1', credentials:'logistics-deploy-credentials')
+        timeout(time: 30, unit: 'MINUTES')
+    }
+
+    stages{
+        stage("Audit"){
+            steps{
+                sh './.ci/scripts/audit.sh'
+            }
+        }
+        stage("Ensure Buildable"){
+            steps{
+                sh './.ci/scripts/tsc.sh'
+            }
+        }
+        stage("Tests"){
+            steps{
+                sh './.ci/scripts/test.sh'
+            }
+        }
+        stage("Deploying branch to Dev"){
+            steps {
+                sh './.ci/scripts/deploy-dev.sh'
+            }
+        }
+        stage("Deploying master to Staging"){
+            when {
+                branch 'master'
+            }
+            steps{
+                sh './.ci/scripts/deploy-stage.sh'
+            }
+        }
+        stage("Deploy to Production?"){
+            when {
+                branch 'master'
+            }
+            input{
+                message "Deploy to Production?"
+            }
+            steps{
+                sh './.ci/scripts/deploy-prod.sh'
+            }
+        }
+    }
+}

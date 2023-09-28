@@ -1,0 +1,85 @@
+image: node:16-alpine
+
+definitions:
+  steps:
+    - step: &scan_api
+        name: "Cloud Defence Scan & Report"
+        script:
+          - cd ./
+          - apk add curl
+          - curl https://raw.githubusercontent.com/CloudDefenseAI/cd/master/latest/cd-latest-linux-x64.tar.gz > /tmp/cd-latest-linux-x64.tar.gz && tar -C /usr/local/bin -xzf /tmp/cd-latest-linux-x64.tar.gz && chmod +x /usr/local/bin/cdefense
+          - export SCAN_URL=https://console.clouddefenseai.com
+          - cdefense online --api-key=$CLOUD_DEFENCE_KEY --repository-url=https://aniruddha-raje:$BITBUCKET_APP_PASSWORD@bitbucket.org/ams-asia-regional/logistics-service.git --verbose
+          - echo $?
+    - step: &build
+        name: build
+        script:
+          - apk add aws-cli
+          - npm i serverless -g
+          - node --version
+          - npm --version
+          - aws --version
+          - serverless --version
+          - echo "installing package json"
+          - npm install
+          
+    - step: &deploy-dev
+        name: deployment
+        script:
+          - apk add aws-cli
+          - npm i serverless -g
+          - npm i typescript -g
+          - node --version
+          - npm --version
+          - aws --version
+          - serverless --version
+          - tsc -v
+          - echo "installing package json"
+          - npm install
+          - ls -a
+          - echo "deploying script"
+          - sh .ci/scripts/deploy_dev.sh 
+
+    - step: &deploy-stage
+        name: deployment
+        script:
+         - apk add aws-cli
+          - npm i serverless -g
+          - node --version
+          - npm --version
+          - aws --version
+          - serverless --version
+          - echo "installing package json"
+          - npm install
+          - echo "deploying script"
+          - sh .ci/scripts/deploy_stage.sh 
+
+    - step: &deploy-prod
+        name: deployment
+        script:
+          - apk add aws-cli
+          - npm i serverless -g
+          - node --version
+          - npm --version
+          - aws --version
+          - serverless --version
+          - echo "installing package json"
+          - npm install
+          - echo "deploying script"
+          - sh .ci/scripts/deploy_prod.sh      
+   
+pipelines:
+  pull-requests:
+    "**":
+      - parallel:
+        - step: *scan_api
+  branches:
+    develop:  
+      # - step: *build
+      - step: *deploy-dev    
+    stage:
+      # - step: *build
+      - step: *deploy-stage
+    prod:
+      # - step: *build
+      - step: *deploy-prod
